@@ -1,0 +1,31 @@
+<link rel="import" href="../polymer/polymer-element.html">
+
+<dom-module id="exmg-datatable">
+  <template>
+    <style>
+      :host {
+        display: table;
+        table-layout: fixed;
+        width: 100%;
+        border-collapse: collapse;
+      }
+    </style>
+    <slot></slot>
+  </template>
+
+  <script>
+    /**
+     * `exmg-datatable`
+     * Datatable
+     *
+     * @customElement
+     * @polymer
+     * @demo demo/index.html
+     */
+    class ExmgDatatable extends Polymer.Element {
+      static get is() { return 'exmg-datatable'; }
+    }
+
+    window.customElements.define(ExmgDatatable.is, ExmgDatatable);
+  </script>
+</dom-module>

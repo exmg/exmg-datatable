@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, minimum-scale=1, initial-scale=1, user-scalable=yes">
+
+    <title>exmg-datatable Filter Demo</title>
+
+    <script src="../../webcomponentsjs/webcomponents-lite.js"></script>
+
+    <link rel="import" href="../../iron-demo-helpers/demo-pages-shared-styles.html">
+    <link rel="import" href="../../iron-demo-helpers/demo-snippet.html">
+    <link rel="import" href="../../paper-card/paper-card.html">
+    <link rel="import" href="../../iron-input/iron-input.html">
+    <link rel="import" href="../../paper-slider/paper-slider.html">
+    <link rel="import" href="../../paper-button/paper-button.html">
+    <link rel="import" href="../../paper-input/paper-input.html">
+    <link rel="import" href="../../paper-icon-button/paper-icon-button.html">
+    <link rel="import" href="../../paper-checkbox/paper-checkbox.html">
+    <link rel="import" href="../../paper-tooltip/paper-tooltip.html">
+
+    <link rel="import" href="../../iron-ajax/iron-ajax.html">
+    <link rel="import" href="../exmg-material-style.html">
+    <link rel="import" href="../exmg-datatable.html">
+    <link rel="import" href="../exmg-toolbar.html">
+    <link rel="import" href="../exmg-thead.html">
+    <link rel="import" href="../exmg-tbody.html">
+    <link rel="import" href="../exmg-paging.html">
+    <link rel="import" href="../exmg-data-helper.html">
+    <link rel="import" href="../exmg-data-filter.html">
+    <link rel="import" href="../exmg-icons.html">
+
+    <custom-style>
+      <style is="custom-style" include="demo-pages-shared-styles">
+      </style>
+    </custom-style>
+  </head>
+  <body>
+
+  <dom-module id="x-table">
+    <template>
+      <style include="exmg-material-style">
+        :host {
+          display: block;
+        }
+        paper-card {
+          display: block;
+          width: 800px;
+          margin: auto;
+          --paper-card-background-color: white;
+        }
+        h2 {
+          width: 800px;
+          margin: 20px auto;
+        }
+        iron-input {
+          width: 100%;
+        }
+        input {
+          font-size: 14px;
+          margin: 0px 4px;
+          padding: 4px;
+          border: 0px solid #dbdbdb;
+          width: 100%;
+        }
+        exmg-toolbar span.interactive-content {
+          margin-left: 10px;
+          white-space: nowrap;
+          overflow: hidden;
+          color: rgba(0,0,0,0.38);
+          font-size: 14px;
+          text-overflow: ellipsis;
+          letter-spacing: .005em;
+          box-sizing: border-box;
+          font-weight: 400;
+          cursor: pointer;
+          width: 100%;
+        }
+        .search {
+          background: white;
+          box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14),
+              0 1px 5px 0 rgba(0, 0, 0, 0.12),
+              0 3px 1px -2px rgba(0, 0, 0, 0.2);
+        }
+        .search input {
+          outline: none;
+        }
+
+        --exmg-tbody-td-hover: {
+          display: none;
+        }
+      </style>
+
+      <h2>Filter Table</h2>
+
+      <paper-card elevation="1">
+        <!-- Table Toobar -->
+        <exmg-toolbar>
+          <div slot="default" class$="[[_computeSearchClasses(isSearch)]]">
+            <template is="dom-if" if="[[isSearch]]" restamp="true">
+              <iron-icon icon="exmg-icons:search"></iron-icon>
+              <iron-input bind-value="{{filterValue}}" >
+                <input id="searchInput" placeholder="[[this.placeHolder]]" value="{{value::input}}" on-keyup="_handleKeyUp" on-blur="_handleInputBlur">
+              </iron-input>
+            </template>
+            <template is="dom-if" if="[[!isSearch]]" restamp="true">
+              <iron-icon icon="exmg-icons:search"></iron-icon>
+              <span class="interactive-content" on-tap="_showSearch">[[_getFilterValue(filterValue)]]</span>
+              <paper-icon-button icon="exmg-icons:add" on-tap="_addItem"></paper-icon-button>
+            </template>
+          </div>
+        </exmg-toolbar>
+        <!-- DataTable -->
+        <exmg-datatable>
+          <!-- Colgroup -->
+          <div class="colgroup">
+            <div class="col" style="width:140px;"></div>
+            <div class="col" style="width:220px;"></div>
+            <div class="col" style="width:120px;"></div>
+            <div class="col" style="width:50%;"></div>
+            <div class="col" style="width:116px;"></div>
+          </div>
+          <!-- THead -->
+          <exmg-thead sorted="{{sorted}}" sort-direction="{{sortDirection}}">
+            <div class="tr">
+              <div class="th" sortable="name">Name</div>
+              <div class="th" sortable="email">Email</div>
+              <div class="th" sortable="city">City</div>
+              <div class="th" sortable="country">Country</div>
+              <div class="th"></div>
+            </div>
+          </exmg-thead>
+          <!-- TBody -->
+          <exmg-tbody items='[[items]]'>
+            <template>
+              <div class="tr">
+                <div class="td">[[item.name]]</div>
+                <div class="td">[[item.email]]</div>
+                <div class="td">[[item.city]]</div>
+                <div class="td">[[item.country]]</div>
+                <div class="td hover" style="text-align:right;">
+                  <span>
+                    <paper-icon-button icon="exmg-icons:content-copy" on-tap="_stopTap"></paper-icon-button>
+                    <paper-tooltip>Copy users UID</paper-tooltip>
+                  </span>
+                  <span>
+                    <paper-icon-button icon="exmg-icons:more-vert" on-tap="_stopTap"></paper-icon-button>
+                    <paper-tooltip>More user options</paper-tooltip>
+                  </span>
+                </div>
+              </div>
+            </template>
+          </exmg-tbody>
+        </exmg-datatable>
+        <!-- Table Paging -->
+        <exmg-paging total-items="[[totalItems]]" page-index="{{pageIndex}}" page-size="{{pageSize}}"></exmg-paging>
+      </paper-card>
+
+      <!-- Load contacts from json file  -->
+      <iron-ajax url="data/contacts.json" last-response="{{rawItems}}" auto></iron-ajax>
+
+      <!-- Filter items by filter value and return resulting items to the data provider  -->
+      <exmg-data-filter raw-items="[[rawItems]]" items="{{filteredItems}}" filter-value="[[filterValue]]" filter-fields="name,email"></exmg-data-filter>
+
+      <!-- Manage sorting and paging  -->
+      <exmg-data-helper raw-items="[[filteredItems]]" items="{{items}}" page-index="[[pageIndex]]" page-size="[[pageSize]]" sorted="[[sorted]]" sort-direction="[[sortDirection]]" total-items="{{totalItems}}"></exmg-data-helper>
+
+    </template>
+    <script>
+    window.addEventListener('WebComponentsReady', function() {
+      class XTable extends Polymer.Element {
+        static get is() { return 'x-table'; }
+        static get properties() {
+          return {
+            pageIndex: {
+              type: Number,
+              value: 0
+            },
+            pageSize: {
+              type: Number,
+              value: 10
+            },
+            sorted: {
+              type: String,
+              value: 'name',
+            },
+            sortDirection: {
+              type: String,
+              value: 'ASC',
+            },
+            filterValue: {
+              type: String,
+              value: '',
+            },
+            isSearch: {
+              type: Boolean,
+              value: false,
+            },
+            placeHolder: {
+              type: String,
+              value: 'Search admin user by name',
+            }
+          };
+        }
+        _stopTap(e) {
+          // Do something
+          e.stopPropagation();
+        }
+        _getFilterValue(filterValue) {
+          return filterValue || this.placeHolder;
+        }
+
+        _handleKeyUp(e) {
+          if(e.keyCode === 27) {
+            this._hideSearch();
+          }
+        }
+
+        _handleInputBlur() {
+          this._hideSearch();
+        }
+
+        _hideSearch() {
+          this.set('isSearch', false);
+        }
+        _showSearch() {
+          this.set('isSearch', true);
+          setTimeout(() => this.shadowRoot.querySelector('#searchInput').focus(), 200);
+        }
+        _computeSearchClasses(isSearch) {
+          return isSearch ? 'search' : '';
+        }
+      }
+      window.customElements.define(XTable.is, XTable);
+    });
+    </script>
+  </dom-module>
+
+  <x-table></x-table>
+
+  </body>
+</html>
